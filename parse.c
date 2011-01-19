@@ -15,7 +15,7 @@
  */
 #define MAXLINE 81
 
-void init_info(parseInfo *p) {
+void init_info(ParseInfo *p) {
 	int i;
 
 	p->boolInfile = 0;
@@ -62,8 +62,8 @@ void parse_command(char * command, struct commandType *comm) {
 	comm->VarList[comm->VarNum] = NULL;
 }
 
-parseInfo *parse(char *cmdline) {
-	parseInfo *Result;
+ParseInfo *parse(char *cmdline) {
+	ParseInfo *result;
 	int i = 0;
 	int pos;
 	int end = 0;
@@ -74,22 +74,22 @@ parseInfo *parse(char *cmdline) {
 		return NULL;
 	}
 
-	Result = malloc(sizeof(parseInfo));
-	if (Result == NULL) {
+	result = malloc(sizeof(ParseInfo));
+	if (result == NULL) {
 		return NULL;
 	}
-	init_info(Result);
+	init_info(result);
 	com_pos = 0;
 	while (cmdline[i] != '\n' && cmdline[i] != '\0') {
 		if (cmdline[i] == '&') {
-			Result->boolBackground = 1;
+			result->boolBackground = 1;
 			if (cmdline[i + 1] != '\n' && cmdline[i + 1] != '\0') {
 				fprintf(stderr, "Ignore anything beyond &.\n");
 			}
 			break;
 		}
 		else if (cmdline[i] == '<') {
-			Result->boolInfile = 1;
+			result->boolInfile = 1;
 			while (isspace(cmdline[++i])) {
 				;
 			}
@@ -98,12 +98,12 @@ parseInfo *parse(char *cmdline) {
 				if (pos == FILE_MAX_SIZE) {
 					fprintf(stderr,
 							"Error.The input redirection file name exceeds the size limit 40\n");
-					free_info(Result);
+					free_info(result);
 					return NULL;
 				}
-				Result->inFile[pos++] = cmdline[i++];
+				result->inFile[pos++] = cmdline[i++];
 			}
-			Result->inFile[pos] = '\0';
+			result->inFile[pos] = '\0';
 			end = 1;
 			while (isspace(cmdline[i])) {
 				if (cmdline[i] == '\n') {
@@ -113,7 +113,7 @@ parseInfo *parse(char *cmdline) {
 			}
 		}
 		else if (cmdline[i] == '>') {
-			Result->boolOutfile = 1;
+			result->boolOutfile = 1;
 			while (isspace(cmdline[++i])) {
 				;
 			}
@@ -122,12 +122,12 @@ parseInfo *parse(char *cmdline) {
 				if (pos == FILE_MAX_SIZE) {
 					fprintf(stderr,
 							"Error.The output redirection file name exceeds the size limit 40\n");
-					free_info(Result);
+					free_info(result);
 					return NULL;
 				}
-				Result->outFile[pos++] = cmdline[i++];
+				result->outFile[pos++] = cmdline[i++];
 			}
-			Result->outFile[pos] = '\0';
+			result->outFile[pos] = '\0';
 			end = 1;
 			while (isspace(cmdline[i])) {
 				if (cmdline[i] == '\n') {
@@ -138,34 +138,34 @@ parseInfo *parse(char *cmdline) {
 		}
 		else if (cmdline[i] == '|') {
 			command[com_pos] = '\0';
-			parse_command(command, &Result->CommArray[Result->pipeNum]);
+			parse_command(command, &result->CommArray[result->pipeNum]);
 			com_pos = 0;
 			end = 0;
-			Result->pipeNum++;
+			result->pipeNum++;
 			i++;
 		}
 		else {
 			if (end == 1) {
 				fprintf(stderr, "Error.Wrong format of input\n");
-				free_info(Result);
+				free_info(result);
 				return NULL;
 			}
 			if (com_pos == MAXLINE - 1) {
 				fprintf(stderr,
 						"Error. The command length exceeds the limit 80\n");
-				free_info(Result);
+				free_info(result);
 				return NULL;
 			}
 			command[com_pos++] = cmdline[i++];
 		}
 	}
 	command[com_pos] = '\0';
-	parse_command(command, &Result->CommArray[Result->pipeNum]);
-	/*Result->pipeNum++;*/
-	return Result;
+	parse_command(command, &result->CommArray[result->pipeNum]);
+	/*result->pipeNum++;*/
+	return result;
 }
 
-void print_info(parseInfo *info) {
+void print_info(ParseInfo *info) {
 	int i, j;
 	struct commandType *comm;
 
@@ -209,7 +209,7 @@ void print_info(parseInfo *info) {
 	}
 }
 
-void free_info(parseInfo *info) {
+void free_info(ParseInfo *info) {
 	int i, j;
 	struct commandType *comm;
 

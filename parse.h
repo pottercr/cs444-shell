@@ -17,9 +17,9 @@ typedef struct {
   int   pipeNum;
   char  inFile[FILE_MAX_SIZE];	       /* file to be piped from */
   char  outFile[FILE_MAX_SIZE];	       /* file to be piped into */
-} parseInfo;
+} ParseInfo;
 
 /* the function prototypes */
-parseInfo *parse(char *);
-void free_info(parseInfo *);
-void print_info(parseInfo *);
+ParseInfo *parse(char *);
+void free_info(ParseInfo *);
+void print_info(ParseInfo *);
