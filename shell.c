@@ -9,8 +9,7 @@ enum BUILTIN_COMMANDS {
 	NO_SUCH_BUILTIN = 0, EXIT, JOBS
 };
 
-char *
-buildPrompt() {
+char * buildPrompt() {
 	return "%";
 }
 
@@ -25,8 +24,8 @@ int isBuiltInCommand(char * cmd) {
 int main(int argc, char **argv) {
 
 	char * cmdLine;
-	parseInfo *info; /*info stores all the information returned by parser.*/
-	struct commandType *com; /*com stores command name and Arg list for one command.*/
+	ParseInfo *info; /*info stores all the information returned by parser.*/
+	struct CommandType *com; /*com stores command name and Arg list for one command.*/
 
 #ifdef UNIX
 
@@ -60,7 +59,7 @@ int main(int argc, char **argv) {
 		print_info(info);
 
 		/*com contains the info. of the command before the first "|"*/
-		com = &info->CommArray[0];
+		com = &info->commArray[0];
 		if ((com == NULL) || (com->command == NULL)) {
 			free_info(info);
 			free(cmdLine);
