@@ -12,7 +12,38 @@ enum BUILTIN_COMMANDS {
 };
 
 char* buildPrompt() {
-	return "%";
+
+	/* Decalre variables */
+	char pwd[MAXPATHLEN];
+	char * username;
+	char hostname[MAXHOSTNAMELEN];
+	char * prompt;
+
+	/* Grab the current working directory */
+	getcwd( pwd, MAXPATHLEN );
+
+	/* Grab the current user */
+	username = getenv("USER");
+	if( username == NULL )
+	{
+		exit(1);
+	}
+	
+
+	/* Grab the current hostname */
+	if( gethostname( hostname, MAXHOSTNAMELEN ) == -1 )
+	{
+		exit(1);
+	}
+
+	/* Build up the prompt */
+	prompt = strcat( username, "@" );
+	prompt = strcat( prompt, hostname );
+	prompt = strcat( prompt, ":" );
+	prompt = strcat( prompt, pwd );
+	prompt = strcat( prompt, "%" );
+
+	return prompt;
 }
 
 int isBuiltInCommand(char * cmd) {
