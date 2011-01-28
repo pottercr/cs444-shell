@@ -10,7 +10,7 @@
 #include <sys/wait.h>
 
 enum BUILTIN_COMMANDS {
-	NO_SUCH_BUILTIN = 0, EXIT, JOBS, CD, KILL
+	NO_SUCH_BUILTIN = 0, EXIT, JOBS, CD, KILL, HISTORY
 };
 
 char* buildPrompt() {
@@ -67,6 +67,9 @@ int isBuiltInCommand(char * cmd) {
 	}
 	else if( strncmp(cmd, "kill", strlen("kill")) == 0) {
 		return KILL;
+	}
+	else if( strncmp(cmd, "history", strlen("history")) == 0 ) {
+		return HISTORY;
 	}
 	return NO_SUCH_BUILTIN;
 }
@@ -164,6 +167,19 @@ externalCommand( ParseInfo* parseInfo ) {
 	dup2(err, STDERR_FILENO);
 }
 
+void printHistory() {
+	HIST_ENTRY** list;
+	int num, i;
+
+	list = history_list();
+	num = history_length;
+
+	for( i = 0; i < num - 1; i++ ) {
+		printf("[%d] ", history_base + i);
+		printf("%s\n", list[i]->line);
+	}
+}
+
 void changeDirectory( ParseInfo * info) {
 	/* Grab hold of the directory */
 	struct commandType  com = info->CommArray[0];
@@ -184,6 +200,7 @@ int main(int argc, char **argv) {
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
 	int returnCode;
 
+	stifle_history(10);
 
 #ifdef UNIX
 	fprintf(stdout, "This is the UNIX version\n");
@@ -225,10 +242,9 @@ int main(int argc, char **argv) {
 		}
 		else
 		{
-		printf("No match on !x\n");
-
+			printf("No match on !x\n");
 		/* Update the history by shifting out commands */
-
+			add_history(cmdLine);
 		}
 
 		/*calls the parser*/
@@ -253,12 +269,27 @@ int main(int argc, char **argv) {
 		}
 		else if( isBuiltInCommand(com->command) == JOBS) {
 			returnCode = execvp(com->command, com->varList);
+			free_info(info);
+            free(cmdLine);
+            continue;
 		}
 		else if( isBuiltInCommand(com->command) == CD) {
 			changeDirectory( info );
+			free_info(info);
+            free(cmdLine);
+            continue;
 		}
 		else if( isBuiltInCommand(com->command) == KILL) {
 			killJob( info );
+			free_info(info);
+            free(cmdLine);
+            continue;
+		}
+		else if( isBuiltInCommand(com->command) == HISTORY ) {
+			printHistory();
+			free_info(info);
+			free(cmdLine);
+			continue;
 		}
 
 		/*insert your code here.*/
