@@ -81,14 +81,7 @@ ParseInfo *parse(char *cmdline) {
 	init_info(result);
 	com_pos = 0;
 	while (cmdline[i] != '\n' && cmdline[i] != '\0') {
-		if (cmdline[i] == '&') {
-			result->boolBackground = 1;
-			if (cmdline[i + 1] != '\n' && cmdline[i + 1] != '\0') {
-				fprintf(stderr, "Ignore anything beyond &.\n");
-			}
-			break;
-		}
-		else if (cmdline[i] == '<') {
+		if (cmdline[i] == '<') {
 			result->boolInfile = 1;
 			while (isspace(cmdline[++i])) {
 				;
@@ -136,6 +129,63 @@ ParseInfo *parse(char *cmdline) {
 				i++;
 			}
 		}
+		else if (cmdline[i] == '&' && cmdline[i+1] == '>') {
+			result->boolAllOutfile = 1;
+			++i;
+			while (isspace(cmdline[++i])) {
+                ;
+            }
+            pos = 0;
+            while (cmdline[i] != '\0' && !isspace(cmdline[i])) {
+                if (pos == FILE_MAX_SIZE) {
+                    fprintf(stderr,
+                            "Error.The output redirection file name exceeds the size limit 40\n");
+                    free_info(result);
+                    return NULL;
+                }
+                result->allOutFile[pos++] = cmdline[i++];
+            }
+            result->allOutFile[pos] = '\0';
+            end = 1;
+            while (isspace(cmdline[i])) {
+                if (cmdline[i] == '\n') {
+                    break;
+                }
+                i++;
+            }
+        }
+		else if (cmdline[i] == '2' && cmdline[i+1] == '>') {
+            result->boolErrfile = 1;
+            ++i;
+            while (isspace(cmdline[++i])) {
+                ;
+            }
+            pos = 0;
+            while (cmdline[i] != '\0' && !isspace(cmdline[i])) {
+                if (pos == FILE_MAX_SIZE) {
+                    fprintf(stderr,
+                            "Error.The output redirection file name exceeds the size limit 40\n");
+                    free_info(result);
+                    return NULL;
+                }
+                result->errFile[pos++] = cmdline[i++];
+            }
+            result->errFile[pos] = '\0';
+            end = 1;
+            while (isspace(cmdline[i])) {
+                if (cmdline[i] == '\n') {
+                    break;
+                }
+                i++;
+            }
+        }
+		else if (cmdline[i] == '&') {
+            result->boolBackground = 1;
+            if (cmdline[i + 1] != '\n' && cmdline[i + 1] != '\0') {
+                fprintf(stderr, "Ignore anything beyond &.\n");
+            }
+            break;
+        }
 		else if (cmdline[i] == '|') {
 			command[com_pos] = '\0';
 			parse_command(command, &result->CommArray[result->pipeNum]);

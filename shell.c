@@ -62,13 +62,14 @@ int isBuiltInCommand(char * cmd) {
 }
 
 externalCommand( ParseInfo* parseInfo ) {
-	int pid, status, returnCode, out, in, infile, outfile;
+	int pid, status, returnCode, out, in, err, infile, outfile, errfile;
 	struct commandType* com;
 	
 	com = &parseInfo->CommArray[0];	
 
 	in = dup(STDIN_FILENO);
 	out = dup(STDOUT_FILENO);
+	err = dup(STDERR_FILENO);
 
 	if( parseInfo->boolInfile == 1 ) {
 		infile = open(parseInfo->inFile, O_RDONLY);
@@ -89,6 +90,27 @@ externalCommand( ParseInfo* parseInfo ) {
 			dup2(outfile, STDOUT_FILENO);
 		}
 	}
+
+	if( parseInfo->boolErrfile == 1 ) {
+        errfile = open(parseInfo->errFile, O_WRONLY | O_CREAT | O_TRUNC );
+        if( outfile < 0 ) {
+            fprintf(stderr, "The file could not be opened for writing");
+        }
+        else {
+            dup2(errfile, STDERR_FILENO);
+        }
+    }
+
+	if( parseInfo->boolAllOutfile == 1 ) {
+        outfile = open(parseInfo->allOutFile, O_WRONLY | O_CREAT | O_TRUNC );
+        if( outfile < 0 ) {
+            fprintf(stderr, "The file could not be opened for writing");
+        }
+        else {
+            dup2(outfile, STDOUT_FILENO);
+			dup2(outfile, STDERR_FILENO);
+        }
+    }
 
 	pid = fork();
 	if( pid == 0 )
@@ -112,9 +134,11 @@ externalCommand( ParseInfo* parseInfo ) {
 
 	close(outfile);
 	close(infile);
+	close(errfile);
 
 	dup2(in, STDIN_FILENO);
 	dup2(out, STDOUT_FILENO);
+	dup2(err, STDERR_FILENO);
 }
 
 int main(int argc, char **argv) {
