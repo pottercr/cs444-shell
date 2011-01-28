@@ -25,6 +25,7 @@ int isBuiltInCommand(char * cmd) {
 
 int main(int argc, char **argv) {
 
+	int pid, status;
 	char * cmdLine;
 	ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
@@ -72,9 +73,15 @@ int main(int argc, char **argv) {
 		}
 
 		/*insert your code here.*/
-        if( !execvp(com->command, com->varList) ) {
-            fprintf("Not a valid command\nERROTR: %s\n", errno);
-        }
+        pid = fork();
+		if( pid == 0 ) {
+			if( execvp(com->command, com->varList) == -1 ) {
+            	printf("Not a valid command\n");
+        	}
+		}
+		else {
+			waitpid(pid, &status, 0);
+		}
 
 		free_info(info);
 		free(cmdLine);

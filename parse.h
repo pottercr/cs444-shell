@@ -4,7 +4,7 @@
 
 struct commandType {
   char *command;
-  char *VarList[MAX_VAR_NUM];
+  char *varList[MAX_VAR_NUM];
   int VarNum;
 };
 

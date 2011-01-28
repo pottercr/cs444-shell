@@ -25,7 +25,7 @@ void init_info(ParseInfo *p) {
 
 	for (i = 0; i < PIPE_MAX_NUM; i++) {
 		p->CommArray[i].command = NULL;
-		p->CommArray[i].VarList[0] = NULL;
+		p->CommArray[i].varList[0] = NULL;
 		p->CommArray[i].VarNum = 0;
 	}
 }
@@ -37,7 +37,7 @@ void parse_command(char * command, struct commandType *comm) {
 
 	comm->VarNum = 0;
 	comm->command = NULL;
-	comm->VarList[0] = NULL;
+	comm->varList[0] = NULL;
 	while (isspace(command[i])) {
 		i++;
 	}
@@ -49,17 +49,17 @@ void parse_command(char * command, struct commandType *comm) {
 			word[pos++] = command[i++];
 		}
 		word[pos] = '\0';
-		comm->VarList[comm->VarNum] = malloc((strlen(word) + 1) * sizeof(char));
-		strcpy(comm->VarList[comm->VarNum], word);
+		comm->varList[comm->VarNum] = malloc((strlen(word) + 1) * sizeof(char));
+		strcpy(comm->varList[comm->VarNum], word);
 		comm->VarNum++;
 		word[0] = '\0';
 		pos = 0;
 		while (isspace(command[i]))
 			i++;
 	}
-	comm->command = malloc((strlen(comm->VarList[0]) + 1) * sizeof(char));
-	strcpy(comm->command, comm->VarList[0]);
-	comm->VarList[comm->VarNum] = NULL;
+	comm->command = malloc((strlen(comm->varList[0]) + 1) * sizeof(char));
+	strcpy(comm->command, comm->varList[0]);
+	comm->varList[comm->VarNum] = NULL;
 }
 
 ParseInfo *parse(char *cmdline) {
@@ -182,7 +182,7 @@ void print_info(ParseInfo *info) {
 		} else {
 			printf("Command %d is %s.\t", i + 1, comm->command);
 			for (j = 0; j < comm->VarNum; j++) {
-				printf("Arg %d: %s ", j, comm->VarList[j]);
+				printf("Arg %d: %s ", j, comm->varList[j]);
 			}
 			printf("\n");
 		}
@@ -218,7 +218,7 @@ void free_info(ParseInfo *info) {
 	for (i = 0; i < PIPE_MAX_NUM; i++) {
 		comm = &(info->CommArray[i]);
 		for (j = 0; j < comm->VarNum; j++) {
-			free(comm->VarList[j]);
+			free(comm->varList[j]);
 		}
 		if (NULL != comm->command) {
 			free(comm->command);
