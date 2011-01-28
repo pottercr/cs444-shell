@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -61,10 +62,33 @@ int isBuiltInCommand(char * cmd) {
 }
 
 externalCommand( ParseInfo* parseInfo ) {
-	int pid, status, returnCode;
+	int pid, status, returnCode, out, in, infile, outfile;
 	struct commandType* com;
 	
 	com = &parseInfo->CommArray[0];	
+
+	in = dup(STDIN_FILENO);
+	out = dup(STDOUT_FILENO);
+
+	if( parseInfo->boolInfile == 1 ) {
+		infile = open(parseInfo->inFile, O_RDONLY);
+		if( infile < 0 ) {
+			fprintf(stderr, "File cannot be read from");
+		}
+		else {
+			dup2(infile, STDIN_FILENO);
+		}
+	}
+
+	if( parseInfo->boolOutfile == 1 ) {
+		outfile = open(parseInfo->outFile, O_WRONLY | O_CREAT | O_TRUNC );
+		if( outfile < 0 ) {
+			fprintf(stderr, "The file could not be opened for writing");
+		}
+		else {
+			dup2(outfile, STDOUT_FILENO);
+		}
+	}
 
 	pid = fork();
 	if( pid == 0 )
@@ -85,6 +109,12 @@ externalCommand( ParseInfo* parseInfo ) {
 	{
 		waitpid(pid, &status, 0);
 	}
+
+	close(outfile);
+	close(infile);
+
+	dup2(in, STDIN_FILENO);
+	dup2(out, STDOUT_FILENO);
 }
 
 int main(int argc, char **argv) {
