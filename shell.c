@@ -9,6 +9,19 @@
 #include "parse.h"   /*include declarations for parse-related structs*/
 #include <sys/wait.h>
 
+/* Structure to hold info about a job */
+struct job {
+	char *cmd;
+	int pid;
+	int jNum;
+};
+
+/* Way to hold a list of the background jobs (and how many) */
+typedef struct {
+	int numJobs;
+	struct job listOfJobs[10];
+} jobs;
+
 enum BUILTIN_COMMANDS {
 	NO_SUCH_BUILTIN = 0, EXIT, JOBS, CD, KILL
 };
@@ -71,10 +84,25 @@ int isBuiltInCommand(char * cmd) {
 	return NO_SUCH_BUILTIN;
 }
 
-externalCommand( ParseInfo* parseInfo ) {
+void addAJob( struct job * job, ParseInfo * info, int pid, int jNum) {
+	struct commandType * com = &info->CommArray[0];
+	job->cmd = NULL;
+	job->pid = -1;
+	job->jNum = 0;
+
+	job->cmd = malloc( (strlen(com->command)) * sizeof(char));
+	strcpy( job->cmd, com->command);
+	job->pid = pid;
+	job->jNum = jNum;
+	printf("pid: %i\n", pid);
+	printf("job: %s\n", job->cmd);
+}
+
+externalCommand( ParseInfo* parseInfo, jobs * jobsList ) {
 	int pid, status, returnCode, out, in, err, infile, outfile, errfile;
 	struct commandType* com;
-	
+	struct job * newJob;
+
 	com = &parseInfo->CommArray[0];	
 
 	in = dup(STDIN_FILENO);
@@ -126,9 +154,16 @@ externalCommand( ParseInfo* parseInfo ) {
 		pid = fork();
 
 		if( pid == 0 )
+			/* Run the command */
 			execvp( com->command, com->varList);
 		else
 		{
+			/* Add the job information to the list */
+			/*newJob->cmd = NULL;*/
+			addAJob( &jobsList->listOfJobs[jobsList->numJobs], parseInfo, pid, jobsList->numJobs );
+			jobsList->numJobs++;
+
+			/* Don't have parent wait */
 			waitpid(0, &status, WNOHANG);
 		}
 
@@ -164,6 +199,7 @@ externalCommand( ParseInfo* parseInfo ) {
 	dup2(err, STDERR_FILENO);
 }
 
+
 void changeDirectory( ParseInfo * info) {
 	/* Grab hold of the directory */
 	struct commandType  com = info->CommArray[0];
@@ -172,7 +208,15 @@ void changeDirectory( ParseInfo * info) {
 	chdir( com.varList[1] );
 }
 
-void killJob( ParseInfo * info) {
+void killJob( int pid ) {
+	kill( pid, SIGKILL );
+}
+
+void listJobs( jobs * jobList ) {
+	int i;
+	for( i = 0; i < jobList->numJobs; i++ ) {
+		printf("[%i] %s\n", i+1, jobList->listOfJobs[i].cmd);
+	}
 
 }
 
@@ -183,7 +227,17 @@ int main(int argc, char **argv) {
 	char * cmdLine; ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
 	int returnCode;
+	jobs * jobList;
+	int i;
 
+	jobList = malloc( sizeof( jobs ) );
+	jobList->numJobs = 0;
+	for(i = 0; i < 10; i++) {
+		jobList->listOfJobs[i].cmd = NULL;
+		jobList->listOfJobs[i].pid = -1;
+		jobList->listOfJobs[i].jNum = 0;
+	}
+	
 
 #ifdef UNIX
 	fprintf(stdout, "This is the UNIX version\n");
@@ -252,17 +306,19 @@ int main(int argc, char **argv) {
 			exit(1);
 		}
 		else if( isBuiltInCommand(com->command) == JOBS) {
-			returnCode = execvp(com->command, com->varList);
+			listJobs( jobList );
 		}
 		else if( isBuiltInCommand(com->command) == CD) {
 			changeDirectory( info );
 		}
 		else if( isBuiltInCommand(com->command) == KILL) {
-			killJob( info );
+			printf("kill: %i\n", jobList->listOfJobs[atoi(com->varList[1])-1].pid);
+			kill( jobList->listOfJobs[atoi(com->varList[1])-1].pid );
+			jobList->listOfJobs[atoi(com->varList[1])].jNum = -1;
 		}
 
 		/*insert your code here.*/
-		externalCommand(info);
+		externalCommand(info, jobList);
 		
 		free_info(info);
 		free(cmdLine);
