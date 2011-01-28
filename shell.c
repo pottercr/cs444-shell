@@ -72,6 +72,9 @@ int main(int argc, char **argv) {
 		}
 
 		/*insert your code here.*/
+        if( !execvp(com->command, com->varList) ) {
+            fprintf("Not a valid command\nERROTR: %s\n", errno);
+        }
 
 		free_info(info);
 		free(cmdLine);
