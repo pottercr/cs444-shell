@@ -15,14 +15,17 @@ char* buildPrompt() {
 
 	/* Decalre variables */
 	char pwd[MAXPATHLEN];
-	char * username;
-	char hostname[MAXHOSTNAMELEN];
-	char * prompt;
+/*	char * username;
+	char hostname[MAXHOSTNAMELEN];*/
+	char * prompt; 
 
 	/* Grab the current working directory */
 	getcwd( pwd, MAXPATHLEN );
 
-	/* Grab the current user */
+/*	This was an attempt at grabbing the username and hostname to include in the prompt.  It works on the first run through
+	but for some reason starts duplicating the prompt every time a command is run.
+
+	Grab the current user 
 	username = getenv("USER");
 	if( username == NULL )
 	{
@@ -30,20 +33,23 @@ char* buildPrompt() {
 	}
 	
 
-	/* Grab the current hostname */
+	 Grab the current hostname 
 	if( gethostname( hostname, MAXHOSTNAMELEN ) == -1 )
 	{
 		exit(1);
 	}
 
-	/* Build up the prompt */
+	 Build up the prompt 
 	prompt = strcat( username, "@" );
 	prompt = strcat( prompt, hostname );
 	prompt = strcat( prompt, ":" );
 	prompt = strcat( prompt, pwd );
 	prompt = strcat( prompt, "%" );
+*/
 
-	return prompt;
+
+	/*return prompt;*/
+	return strcat(pwd, "%");
 }
 
 int isBuiltInCommand(char * cmd) {
@@ -56,10 +62,12 @@ int isBuiltInCommand(char * cmd) {
 
 int main(int argc, char **argv) {
 
+	/* Variable Declaration */
 	int pid, status;
 	char * cmdLine;
 	ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
+	int returnCode;
 
 #ifdef UNIX
 	fprintf(stdout, "This is the UNIX version\n");
@@ -104,13 +112,22 @@ int main(int argc, char **argv) {
 		}
 
 		/*insert your code here.*/
-        pid = fork();
-		if( pid == 0 ) {
-			if( execvp(com->command, com->varList) == -1 ) {
-            	printf("Not a valid command\n");
-        	}
+	        pid = fork();
+		if( pid == 0 )
+		{
+			returnCode = execvp(com->command, com->varList);
+			if( returnCode == -1 )
+			{
+            			printf("Not a valid command\n");
+        		}
 		}
-		else {
+		else if (pid < 0)
+		{
+			/* If we get here it means that the fork() has failed */
+			exit(1);
+		}
+		else
+		{
 			waitpid(pid, &status, 0);
 		}
 
