@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <sys/param.h>
 #include "parse.h"   /*include declarations for parse-related structs*/
 
 enum BUILTIN_COMMANDS {
 	NO_SUCH_BUILTIN = 0, EXIT, JOBS
 };
 
-char *
-buildPrompt() {
+char* buildPrompt() {
 	return "%";
 }
 
@@ -25,11 +26,10 @@ int isBuiltInCommand(char * cmd) {
 int main(int argc, char **argv) {
 
 	char * cmdLine;
-	parseInfo *info; /*info stores all the information returned by parser.*/
+	ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
 
 #ifdef UNIX
-
 	fprintf(stdout, "This is the UNIX version\n");
 #endif
 
