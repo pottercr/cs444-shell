@@ -68,6 +68,8 @@ int main(int argc, char **argv) {
 	ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
 	int returnCode;
+	int i;
+	char** history;
 
 #ifdef UNIX
 	fprintf(stdout, "This is the UNIX version\n");
@@ -89,6 +91,39 @@ int main(int argc, char **argv) {
 #endif
 
 		/*insert your code about history and !x !-x here*/
+		/* Here we need to both maintain the history, and replace
+			any commands of the form "!x" with the correct
+			command */
+
+		/* Code to replace the commands of the form "!x" */
+		if( strncmp( cmdLine, "!", 1) == 0 )
+		{/* Inside here means that the command is of the form "!x" */
+			printf("Matched !x\n");
+			if( strncmp( cmdLine, "!-1", 3) == 0 )
+			{/* Inside here we just want the previous cmd */
+				printf("Matchex !-1\n");
+				printf("cmdLine: %s\n", cmdLine);
+				printf("history[0]: %s\n", history[0]);
+				cmdLine = history[0];
+			}
+			else
+			{/* Inside here we want the numbered cmd */
+
+			}
+		}
+		else
+		{
+		printf("No match on !x\n");
+
+		/* Update the history by shifting out commands */
+		for(i = 9; i > 0; i--)
+		{
+			history[i] = history[i-1];
+		}
+		*history[0] = *cmdLine;
+		printf("history[0]: %s\n", history[0]);
+
+		}
 
 		/*calls the parser*/
 		info = parse(cmdLine);
