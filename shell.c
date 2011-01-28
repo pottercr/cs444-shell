@@ -60,6 +60,33 @@ int isBuiltInCommand(char * cmd) {
 	return NO_SUCH_BUILTIN;
 }
 
+externalCommand( ParseInfo* parseInfo ) {
+	int pid, status, returnCode;
+	struct commandType* com;
+	
+	com = &parseInfo->CommArray[0];	
+
+	pid = fork();
+	if( pid == 0 )
+	{
+		returnCode = execvp(com->command, com->varList);
+		if( returnCode == -1 )
+		{
+			printf("Not a valid command\n");
+			exit(1);
+		}
+	}
+	else if (pid < 0)
+	{
+		/* If we get here it means that the fork() has failed */
+		exit(1);
+	}
+	else
+	{
+		waitpid(pid, &status, 0);
+	}
+}
+
 int main(int argc, char **argv) {
 
 	/* Variable Declaration */
@@ -112,25 +139,8 @@ int main(int argc, char **argv) {
 		}
 
 		/*insert your code here.*/
-	        pid = fork();
-		if( pid == 0 )
-		{
-			returnCode = execvp(com->command, com->varList);
-			if( returnCode == -1 )
-			{
-            			printf("Not a valid command\n");
-        		}
-		}
-		else if (pid < 0)
-		{
-			/* If we get here it means that the fork() has failed */
-			exit(1);
-		}
-		else
-		{
-			waitpid(pid, &status, 0);
-		}
-
+		externalCommand(info);
+		
 		free_info(info);
 		free(cmdLine);
 	}/* while(1) */
