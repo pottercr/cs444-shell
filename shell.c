@@ -97,8 +97,6 @@ void addAJob( struct job * job, ParseInfo * info, int pid, int jNum) {
 	strcpy( job->cmd, com->command);
 	job->pid = pid;
 	job->jNum = jNum;
-	printf("pid: %i\n", pid);
-	printf("job: %s\n", job->cmd);
 }
 
 externalCommand( ParseInfo* parseInfo, jobs * jobsList ) {
@@ -338,10 +336,13 @@ int main(int argc, char **argv) {
             continue;
 		}
 		else if( isBuiltInCommand(com->command) == KILL) {
-			printf("kill: %i\n", jobList->listOfJobs[atoi(com->varList[1])-1].pid);
-			kill( jobList->listOfJobs[atoi(com->varList[1])-1].pid );
-			jobList->listOfJobs[atoi(com->varList[1])].jNum = -1;
-			killJob( info );
+			killJob( jobList->listOfJobs[atoi(com->varList[1])-1].pid );
+
+			/* Here we remove the job from the list of jobs */
+			jobList->listOfJobs[atoi(com->varList[1])].cmd = NULL;
+			jobList->listOfJobs[atoi(com->varList[1])].pid = -1;
+			jobList->listOfJobs[atoi(com->varList[1])].jNum = 0;
+			jobList->numJobs--;
 			free_info(info);
             		free(cmdLine);
             		continue;
