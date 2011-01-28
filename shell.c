@@ -23,7 +23,7 @@ typedef struct {
 } jobs;
 
 enum BUILTIN_COMMANDS {
-	NO_SUCH_BUILTIN = 0, EXIT, JOBS, CD, KILL
+	NO_SUCH_BUILTIN = 0, EXIT, JOBS, CD, KILL, HISTORY
 };
 
 char* buildPrompt() {
@@ -80,6 +80,9 @@ int isBuiltInCommand(char * cmd) {
 	}
 	else if( strncmp(cmd, "kill", strlen("kill")) == 0) {
 		return KILL;
+	}
+	else if( strncmp(cmd, "history", strlen("history")) == 0 ) {
+		return HISTORY;
 	}
 	return NO_SUCH_BUILTIN;
 }
@@ -199,6 +202,18 @@ externalCommand( ParseInfo* parseInfo, jobs * jobsList ) {
 	dup2(err, STDERR_FILENO);
 }
 
+void printHistory() {
+	HIST_ENTRY** list;
+	int num, i;
+
+	list = history_list();
+	num = history_length;
+
+	for( i = 0; i < num - 1; i++ ) {
+		printf("[%d] ", history_base + i);
+		printf("%s\n", list[i]->line);
+	}
+}
 
 void changeDirectory( ParseInfo * info) {
 	/* Grab hold of the directory */
@@ -227,6 +242,7 @@ int main(int argc, char **argv) {
 	char * cmdLine; ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
 	int returnCode;
+	HIST_ENTRY** list;
 	jobs * jobList;
 	int i;
 
@@ -238,6 +254,7 @@ int main(int argc, char **argv) {
 		jobList->listOfJobs[i].jNum = 0;
 	}
 	
+	stifle_history(10);
 
 #ifdef UNIX
 	fprintf(stdout, "This is the UNIX version\n");
@@ -267,9 +284,11 @@ int main(int argc, char **argv) {
 		if( strncmp( cmdLine, "!", 1) == 0 )
 		{/* Inside here means that the command is of the form "!x" */
 			printf("Matched !x\n");
+			list = history_list();
 			if( strncmp( cmdLine, "!-1", 3) == 0 )
 			{/* Inside here we just want the previous cmd */
 				printf("Matched !-1\n");
+				strcpy(cmdLine, list[history_length-1]->line);
 				printf("cmdLine: %s\n", cmdLine);
 			}
 			else
@@ -279,12 +298,12 @@ int main(int argc, char **argv) {
 		}
 		else
 		{
-		printf("No match on !x\n");
-
-		/* Update the history by shifting out commands */
-
+			printf("No match on !x\n");
 		}
 
+		/* Update the history by shifting out commands */
+		add_history(cmdLine);
+		
 		/*calls the parser*/
 		info = parse(cmdLine);
 		if (info == NULL) {
@@ -307,14 +326,31 @@ int main(int argc, char **argv) {
 		}
 		else if( isBuiltInCommand(com->command) == JOBS) {
 			listJobs( jobList );
+			returnCode = execvp(com->command, com->varList);
+			free_info(info);
+            		free(cmdLine);
+            		continue;
 		}
 		else if( isBuiltInCommand(com->command) == CD) {
 			changeDirectory( info );
+			free_info(info);
+            free(cmdLine);
+            continue;
 		}
 		else if( isBuiltInCommand(com->command) == KILL) {
 			printf("kill: %i\n", jobList->listOfJobs[atoi(com->varList[1])-1].pid);
 			kill( jobList->listOfJobs[atoi(com->varList[1])-1].pid );
 			jobList->listOfJobs[atoi(com->varList[1])].jNum = -1;
+			killJob( info );
+			free_info(info);
+            		free(cmdLine);
+            		continue;
+		}
+		else if( isBuiltInCommand(com->command) == HISTORY ) {
+			printHistory();
+			free_info(info);
+			free(cmdLine);
+			continue;
 		}
 
 		/*insert your code here.*/
