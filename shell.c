@@ -199,6 +199,7 @@ int main(int argc, char **argv) {
 	char * cmdLine; ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
 	int returnCode;
+	HIST_ENTRY** list;
 
 	stifle_history(10);
 
@@ -230,9 +231,11 @@ int main(int argc, char **argv) {
 		if( strncmp( cmdLine, "!", 1) == 0 )
 		{/* Inside here means that the command is of the form "!x" */
 			printf("Matched !x\n");
+			list = history_list();
 			if( strncmp( cmdLine, "!-1", 3) == 0 )
 			{/* Inside here we just want the previous cmd */
 				printf("Matched !-1\n");
+				strcpy(cmdLine, list[history_length-1]->line);
 				printf("cmdLine: %s\n", cmdLine);
 			}
 			else
@@ -243,10 +246,11 @@ int main(int argc, char **argv) {
 		else
 		{
 			printf("No match on !x\n");
-		/* Update the history by shifting out commands */
-			add_history(cmdLine);
 		}
 
+		/* Update the history by shifting out commands */
+		add_history(cmdLine);
+		
 		/*calls the parser*/
 		info = parse(cmdLine);
 		if (info == NULL) {
