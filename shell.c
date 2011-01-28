@@ -7,9 +7,10 @@
 #include <readline/history.h>
 #include <sys/param.h>
 #include "parse.h"   /*include declarations for parse-related structs*/
+#include <sys/wait.h>
 
 enum BUILTIN_COMMANDS {
-	NO_SUCH_BUILTIN = 0, EXIT, JOBS
+	NO_SUCH_BUILTIN = 0, EXIT, JOBS, CD, KILL
 };
 
 char* buildPrompt() {
@@ -58,6 +59,15 @@ int isBuiltInCommand(char * cmd) {
 	if (strncmp(cmd, "exit", strlen("exit")) == 0) {
 		return EXIT;
 	}
+	else if( strncmp(cmd, "jobs", strlen("jobs")) == 0) {
+		return JOBS;
+	}
+	else if( strncmp(cmd, "cd", strlen("cd")) == 0) {
+		return CD;
+	}
+	else if( strncmp(cmd, "kill", strlen("kill")) == 0) {
+		return KILL;
+	}
 	return NO_SUCH_BUILTIN;
 }
 
@@ -90,6 +100,19 @@ externalCommand( ParseInfo* parseInfo ) {
 		}
 	}
 
+	if(parseInfo->boolBackground == 1){
+		pid = fork();
+
+		if( pid == 0 )
+			execvp( com->command, com->varList);
+		else
+		{
+			waitpid(0, &status, WNOHANG);
+		}
+
+		return;
+	}
+
 	pid = fork();
 	if( pid == 0 )
 	{
@@ -117,16 +140,26 @@ externalCommand( ParseInfo* parseInfo ) {
 	dup2(out, STDOUT_FILENO);
 }
 
+void changeDirectory( ParseInfo * info) {
+	/* Grab hold of the directory */
+	struct commandType  com = info->CommArray[0];
+
+	/* Change to it */
+	chdir( com.varList[1] );
+}
+
+void killJob( ParseInfo * info) {
+
+}
+
 int main(int argc, char **argv) {
 
 	/* Variable Declaration */
 	int pid, status;
-	char * cmdLine;
-	ParseInfo *info; /*info stores all the information returned by parser.*/
+	char * cmdLine; ParseInfo *info; /*info stores all the information returned by parser.*/
 	struct commandType *com; /*com stores command name and Arg list for one command.*/
 	int returnCode;
-	int i;
-	char** history;
+
 
 #ifdef UNIX
 	fprintf(stdout, "This is the UNIX version\n");
@@ -158,10 +191,8 @@ int main(int argc, char **argv) {
 			printf("Matched !x\n");
 			if( strncmp( cmdLine, "!-1", 3) == 0 )
 			{/* Inside here we just want the previous cmd */
-				printf("Matchex !-1\n");
+				printf("Matched !-1\n");
 				printf("cmdLine: %s\n", cmdLine);
-				printf("history[0]: %s\n", history[0]);
-				cmdLine = history[0];
 			}
 			else
 			{/* Inside here we want the numbered cmd */
@@ -173,12 +204,6 @@ int main(int argc, char **argv) {
 		printf("No match on !x\n");
 
 		/* Update the history by shifting out commands */
-		for(i = 9; i > 0; i--)
-		{
-			history[i] = history[i-1];
-		}
-		*history[0] = *cmdLine;
-		printf("history[0]: %s\n", history[0]);
 
 		}
 
@@ -201,6 +226,15 @@ int main(int argc, char **argv) {
 		/*com->command tells the command name of com*/
 		if (isBuiltInCommand(com->command) == EXIT) {
 			exit(1);
+		}
+		else if( isBuiltInCommand(com->command) == JOBS) {
+			returnCode = execvp(com->command, com->varList);
+		}
+		else if( isBuiltInCommand(com->command) == CD) {
+			changeDirectory( info );
+		}
+		else if( isBuiltInCommand(com->command) == KILL) {
+			killJob( info );
 		}
 
 		/*insert your code here.*/
